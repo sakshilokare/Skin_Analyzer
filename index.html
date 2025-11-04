@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skin Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { display: flex; padding: 20px; }
+        .input-section { flex: 1; padding: 20px; }
+        .result-section { flex: 1; padding: 20px; background: #f8f9fa; border-radius: 10px; margin-left: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .upload-area { border: 2px dashed #667eea; padding: 40px; text-align: center; border-radius: 10px; cursor: pointer; margin: 10px 0; }
+        .upload-area:hover { background: #f0f4ff; }
+        .analyze-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        .analyze-btn:hover { opacity: 0.9; }
+        .image-preview { max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 5px; display: none; }
+        .initial-state { text-align: center; padding: 40px 20px; }
+        .result-container { display: none; }
+        .score-circle { width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(green 0% var(--score), lightgray var(--score) 100%); margin: 20px auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .metric-card { background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #667eea; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧬 AI Skin Analyzer</h1>
+            <p>Upload your photo for instant skin analysis</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <form id="skin-form">
+                    <div class="form-group">
+                        <label>Age</label>
+                        <input type="number" name="age" value="30" min="15" max="80" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Skin Type</label>
+                        <select name="skin_type" required>
+                            <option value="oily">Oily</option>
+                            <option value="dry">Dry</option>
+                            <option value="combination" selected>Combination</option>
+                            <option value="normal">Normal</option>
+                            <option value="sensitive">Sensitive</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender" required>
+                            <option value="female">Female</option>
+                            <option value="male">Male</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Upload Face Photo</label>
+                        <div class="upload-area" id="upload-area">
+                            <h3>📷 Click to Upload Photo</h3>
+                            <p>Take a clear face photo and upload it here</p>
+                            <input type="file" id="skin_image" name="skin_image" accept="image/*" style="display: none;">
+                        </div>
+                        <img id="image-preview" class="image-preview" alt="Preview">
+                    </div>
+                    
+                    <button type="submit" class="analyze-btn">🔍 Analyze My Skin</button>
+                </form>
+            </div>
+            
+            <div class="result-section">
+                <div id="initial-state" class="initial-state">
+                    <h2>Welcome to Skin Analyzer</h2>
+                    <p>Fill out the form and upload a photo to get your personalized skin analysis.</p>
+                    <p style="margin-top: 20px; color: #666;">💡 Tips: Good lighting, no makeup, front-facing photo</p>
+                </div>
+                
+                <div class="result-container" id="result-container">
+                    <h2>Your Skin Analysis</h2>
+                    <div class="score-circle" id="score-circle">
+                        <span id="score-text">0</span>
+                    </div>
+                    <p id="score-feedback" style="text-align: center;"></p>
+                    
+                    <h3>Skin Metrics</h3>
+                    <div class="metrics-grid" id="metrics-grid"></div>
+                    
+                    <h3>Recommendations</h3>
+                    <ul id="recommendation-list" style="padding-left: 20px;"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // File upload
+        document.getElementById('upload-area').addEventListener('click', function() {
+            document.getElementById('skin_image').click();
+        });
+        
+        document.getElementById('skin_image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('image-preview').src = e.target.result;
+                    document.getElementById('image-preview').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Form submission
+        document.getElementById('skin-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            document.getElementById('initial-state').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+            
+            const formData = new FormData(this);
+            
+            fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update score
+                    const score = data.analysis.score;
+                    document.getElementById('score-text').textContent = score;
+                    document.getElementById('score-circle').style.setProperty('--score', score + '%');
+                    
+                    // Update feedback
+                    let feedback = score >= 70 ? "Great skin!" : "Needs improvement";
+                    document.getElementById('score-feedback').textContent = feedback;
+                    
+                    // Update metrics
+                    const metricsGrid = document.getElementById('metrics-grid');
+                    metricsGrid.innerHTML = '';
+                    for (const [feature, value] of Object.entries(data.analysis.features)) {
+                        metricsGrid.innerHTML += `
+                            <div class="metric-card">
+                                <strong>${feature}</strong>: ${value.toFixed(1)}/10
+                            </div>
+                        `;
+                    }
+                    
+                    // Update recommendations
+                    const recList = document.getElementById('recommendation-list');
+                    recList.innerHTML = '';
+                    data.analysis.recommendations.forEach(rec => {
+                        recList.innerHTML += `<li>${rec}</li>`;
+                    });
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Analysis failed: ' + error);
+            });
+        });
+    </script>
+</body>
+</html>
