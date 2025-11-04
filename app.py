@@ -60,6 +60,7 @@ def analyze_skin():
         })
 
 if __name__ == '__main__':
-    print("🚀 Skin Analyzer Started!")
-    print("👉 Go to: http://localhost:5000")
+    print("Skin Analyzer Started!")
+    print("Go to: http://localhost:5000")
+
     app.run(debug=True, port=5000)
