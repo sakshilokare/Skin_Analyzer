@@ -17,3 +17,6 @@ A machine learning-powered web application that analyzes skin health from upload
 - **Frontend**: HTML, CSS, JavaScript
 - **Computer Vision**: OpenCV, Pillow
 
+  ##AI Skin Analyzer - Run locally at:
+    http://127.0.0.1:5000/ 
+
